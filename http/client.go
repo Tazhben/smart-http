@@ -26,14 +26,17 @@ var defaultTransport = &http.Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 }
 
-func defaultClient() Client {
+var defaultTimeout = time.Millisecond * 300
+
+func defaultClient() *Client {
 	client := Client{}
 
 	client.http.Transport = defaultTransport
+	client.timeout = defaultTimeout
 
 	// по дефолту во всех сервисах используем openTelemetry
 	client.http.Transport = otelhttp.NewTransport(client.http.Transport)
-	return client
+	return &client
 }
 
 type TLSConfig struct {
@@ -43,13 +46,18 @@ type TLSConfig struct {
 
 type Client struct {
 	tlsConfig TLSConfig
+	timeout   time.Duration
 
 	http http.Client
 }
 
 // NewClient создание клиента
-func NewClient() http.Client {
+func NewClient(options ...func(*Client)) http.Client {
 	client := defaultClient()
+
+	for _, o := range options {
+		o(client)
+	}
 
 	return client.http
 }
@@ -66,5 +74,12 @@ func WithCertificate(caCert []byte) func(client *Client) {
 
 	return func(client *Client) {
 		client.tlsConfig = tlsConfig
+	}
+}
+
+// WithTimeout настройка timeout всех запросов
+func WithTimeout(timeout time.Duration) func(client *Client) {
+	return func(client *Client) {
+		client.http.Timeout = timeout
 	}
 }
