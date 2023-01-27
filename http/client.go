@@ -38,7 +38,7 @@ func defaultClient() *Client {
 	// по дефолту во всех сервисах используем openTelemetry
 	client.http.Transport = otelhttp.NewTransport(client.http.Transport)
 
-	// по дефолту 2 попытки
+	// по дефолту 2 попытки 100 ms ожиданние между запросами
 	client.http = NewRetryClient(client.http, defaultRetry)
 
 	return &client
